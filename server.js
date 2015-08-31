@@ -3,9 +3,9 @@
 // require express and other modules
 var express = require('express'),
 	app = express(),
-	bodyParser = require('body-parser'),  // for data from the request body
-	mongoose = require('mongoose'),       // to interact with our db
-	Question = require('./models/question');
+	bodyParser = require('body-parser'),
+	mongoose = require('mongoose'),
+	Question = require('./models/question.js');
 
 // connect to mongodb
 mongoose.connect(
@@ -17,9 +17,12 @@ mongoose.connect(
 // configure body-parser
 app.use(bodyParser.urlencoded({extended: true}));
 
+
+// ROUTES
+
 // send back all questions
 app.get('/api/questions', function (req, res) {
-	Question.find({}, function (err, questions) {
+	Question.find(function (err, questions) {
 		res.json(questions);
 	});
 });
@@ -37,6 +40,35 @@ app.post('/api/questions', function (req, res) {
 		res.json(savedQuestion);
 	});
 });
+
+// get one question
+app.get('/api/questions/:id', function (req, res) {
+	// set the value of the id
+	var targetId = req.params.id;
+
+	// find question in db by id
+	Question.findOne({_id: targetId}, function (err, foundQuestion) {
+		res.json(foundQuestion);
+	});
+});
+
+// update question by replacing old question in db
+app.put('/api/questions/:id', function (req, res) {
+	// set the value of the id
+	var targetId = req.params.id;
+
+	// find question in db by id
+	Question.findOne({_id: targetId}, function (err, foundQuestion) {
+		// update the question's text
+		foundQuestion.text = req.body.text;
+
+		// save updated question in db
+		foundQuestion.save(function (err, savedQuestion) {
+			res.json(savedQuestion);
+		});
+	});
+});
+
 
 // update question, but only the part(s) passed in in the request body
 // not currently that exciting when question has only one attribute
@@ -57,7 +89,20 @@ app.put('/api/questions/:id', function (req, res) {
 	});
 });
 
+
+// delete question
+app.delete('/api/questions/:id', function (req, res) {
+	// set the value of the id
+	var targetId = req.params.id;
+
+	// find question in db by id and remove
+	Question.findOneAndRemove({_id: targetId}, function (err, deletedQuestion) {
+		res.json(deletedQuestion);
+	});
+});
+
+
 // listen on port 3000
 app.listen(process.env.PORT || 3000, function () {
-	console.log("It's Aliveeeeeee!");
+	console.log("It's aliveeeee!");
 });
