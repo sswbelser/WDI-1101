@@ -1,1 +1,22 @@
-<h1>{{test}}</h1>
+<div class="container text-center">
+	<div class="col-md-8 col-md-offset-4">
+		<h1>All Questions</h1>
+		<hr>
+		<button ng-click="viewForm=!viewForm" class="btn btn-primary">Create new question</button>
+		<br><br>
+		<form ng-submit="createQuestion()" ng-show="viewForm">
+			<div class="form-group">
+				<label for="new-question">Add new Question</label>
+				<input type="text" ng-model="question.text" class="form-control" id="new-question" placeholder="Ask anything">
+			</div>
+			<input type="submit" value="Save Question" class="btn btn-warning">
+		</form>
+		<hr>
+		<div class="row" ng-show="allQuestions.length > 0">
+			<div ng-repeat="q in allQuestions">
+				<h4><a href="/questions/:id">{{q.text}}</a></h4>
+				<hr>
+			</div>
+		</div>
+	</div>
+</div>
