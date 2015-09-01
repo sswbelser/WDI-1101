@@ -11,6 +11,7 @@ mongoose.connect('mongodb://localhost/q_and_a');
 
 // configure body-parser
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.json());
 
 //// API ROUTES
 
@@ -88,7 +89,7 @@ app.post('/api/questions/:questionId/answers', function (req, res) {
 	var questionId = req.params.questionId;
 
 	// store new answer in memory with data from request body
-	var newAnswer = new Answer(req.body.answer);
+	var newAnswer = new Answer(req.body);
 
 	// find question in db by id and add new answer
 	Question.findOne({_id: questionId}, function (err, foundQuestion) {
@@ -135,6 +136,13 @@ app.delete('/api/questions/:questionId/answers/:id', function (req, res) {
 	});
 });
 
+// set location for static files
+app.use(express.static(__dirname + '/public'));
+
+// load public/index.html file (angular app)
+app.get('*', function (req, res) {
+	res.sendFile(__dirname + '/public/views/index.html');
+});
 
 // listen on port 3000
 app.listen(3000, function() {
