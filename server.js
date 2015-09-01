@@ -1,28 +1,22 @@
-// server.js
-
 // require express and other modules
 var express = require('express'),
 	app = express(),
 	bodyParser = require('body-parser'),
 	mongoose = require('mongoose'),
-	Question = require('./models/question.js');
+	Question = require('./models/question'),
+	Answer = require('./models/answer');
 
 // connect to mongodb
-mongoose.connect(
-	process.env.MONGOLAB_URI ||
-	process.env.MONGOHQ_URL ||
-	'mongodb://localhost/q_and_a'
-);
+mongoose.connect('mongodb://localhost/q_and_a');
 
 // configure body-parser
 app.use(bodyParser.urlencoded({extended: true}));
 
-
-// ROUTES
+//// API ROUTES
 
 // send back all questions
 app.get('/api/questions', function (req, res) {
-	Question.find(function (err, questions) {
+	Question.find({}, function (err, questions) {
 		res.json(questions);
 	});
 });
@@ -37,7 +31,11 @@ app.post('/api/questions', function (req, res) {
 
 	// save new question
 	newQuestion.save(function (err, savedQuestion) {
-		res.json(savedQuestion);
+		if (err) {
+			res.status(422).send(err.errors.text.message);
+		} else {
+			res.json(savedQuestion);
+		}
 	});
 });
 
@@ -64,31 +62,14 @@ app.put('/api/questions/:id', function (req, res) {
 
 		// save updated question in db
 		foundQuestion.save(function (err, savedQuestion) {
-			res.json(savedQuestion);
+			if (err) {
+				res.status(422).send(err.errors.text.message);
+			} else {
+				res.json(savedQuestion);
+			}
 		});
 	});
 });
-
-
-// update question, but only the part(s) passed in in the request body
-// not currently that exciting when question has only one attribute
-app.put('/api/questions/:id', function (req, res) {
-	// set the value of the id
-	var targetId = req.params.id;
-
-	// find question in db by id
-	Question.findOne({_id: targetId}, function (err, foundQuestion) {
-		// update the question's text, if the new text passed in was truthy
-		// otherwise keep the same text
-		foundQuestion.text = req.body.text || foundQuestion.text;
-
-		// save updated question in db
-		foundQuestion.save(function (err, savedQuestion) {
-			res.json(savedQuestion);
-		});
-	});
-});
-
 
 // delete question
 app.delete('/api/questions/:id', function (req, res) {
@@ -101,8 +82,61 @@ app.delete('/api/questions/:id', function (req, res) {
 	});
 });
 
+// create answer embedded in question
+app.post('/api/questions/:questionId/answers', function (req, res) {
+	// set the value of the question id
+	var questionId = req.params.questionId;
+
+	// store new answer in memory with data from request body
+	var newAnswer = new Answer(req.body.answer);
+
+	// find question in db by id and add new answer
+	Question.findOne({_id: questionId}, function (err, foundQuestion) {
+		foundQuestion.answers.push(newAnswer);
+		foundQuestion.save(function (err, savedQuestion) {
+			res.json(newAnswer);
+		});
+	});
+});
+
+// update answer embedded in question
+app.put('/api/questions/:questionId/answers/:id', function (req, res) {
+	// set the value of the question and answer ids
+	var questionId = req.params.questionId;
+	var answerId = req.params.id;
+
+	// find question in db by id
+	Question.findOne({_id: questionId}, function (err, foundQuestion) {
+		// find answer embedded in question
+		var foundAnswer = foundQuestion.answers.id(answerId);
+		// update answer content with data from request body
+		foundAnswer.content = req.body.answer.content;
+		foundQuestion.save(function (err, savedQuestion) {
+			res.json(foundAnswer);
+		});
+	});
+});
+
+// delete answer embedded in question
+app.delete('/api/questions/:questionId/answers/:id', function (req, res) {
+	// set the value of the question and answer ids
+	var questionId = req.params.questionId;
+	var answerId = req.params.id;
+
+	// find question in db by id
+	Question.findOne({_id: questionId}, function (err, foundQuestion) {
+		// find answer embedded in question
+		var foundAnswer = foundQuestion.answers.id(answerId);
+		// remove answer
+		foundAnswer.remove();
+		foundQuestion.save(function (err, savedQuestion) {
+			res.json(foundAnswer);
+		});
+	});
+});
+
 
 // listen on port 3000
-app.listen(process.env.PORT || 3000, function () {
+app.listen(3000, function() {
 	console.log("It's aliveeeee!");
 });
